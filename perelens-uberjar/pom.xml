@@ -1,0 +1,86 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.perelens</groupId>
+    <artifactId>perelens</artifactId>
+    <version>1.0</version>
+  </parent>
+  <artifactId>perelens-uberjar</artifactId>
+  <name>Perelens Uber Jar</name>
+  <description>Single jar with all dependencies for easy classpath usage.</description>
+  
+  <build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>3.5.1</version>
+				<configuration>
+					<createSourcesJar>true</createSourcesJar>
+				</configuration>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+
+	<profiles>
+		<profile>
+			<id>central deploy</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-javadoc-plugin</artifactId>
+						<version>${maven.javadoc.version}</version>
+						<executions>
+							<execution>
+								<id>attach-javadocs</id>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+								<configuration>
+									<includeDependencySources>true</includeDependencySources>
+									<dependencySourceIncludes>com.perelens:*</dependencySourceIncludes>
+									<excludePackageNames>edu.cornell.lassp.houle.RngPack</excludePackageNames>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+	
+	<dependencies>
+		<dependency>
+			<groupId>com.perelens</groupId>
+			<artifactId>perelens-simulation-risk</artifactId>
+			<version>1.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.perelens</groupId>
+			<artifactId>perelens-engine-core</artifactId>
+			<version>1.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.perelens</groupId>
+			<artifactId>perelens-random-rngpack</artifactId>
+			<version>1.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.perelens</groupId>
+			<artifactId>perelens-statistics</artifactId>
+			<version>1.0</version>
+		</dependency>
+	</dependencies>
+</project>

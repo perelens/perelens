@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>com.perelens</groupId>
+		<artifactId>perelens</artifactId>
+		<version>1.0</version>
+	</parent>
+	<artifactId>perelens-statistics</artifactId>
+	<name>perelens statistical support</name>
+	<description>Functionality for collecting and processing data from simulations using statistical methods.</description>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.perelens</groupId>
+			<artifactId>perelens-engine-api</artifactId>
+			<version>1.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.hdrhistogram</groupId>
+			<artifactId>HdrHistogram</artifactId>
+			<version>2.1.12</version>
+		</dependency>
+	
+	</dependencies>
+</project>
