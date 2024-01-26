@@ -44,7 +44,7 @@
 	<scm>
 		<connection>scm:git:git://github.com/perelens/perelens.git</connection>
 		<developerConnection>scm:git:ssh://github.com:perelens/perelens.git</developerConnection>
-		<url>http://github.com/perelens/perelens/tree/master</url>
+		<url>https://github.com/perelens/perelens/tree/main</url>
 	</scm>
 
 	<dependencyManagement>

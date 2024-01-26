@@ -108,7 +108,7 @@ class SubEntry implements Iterable<Event>,ConsumerResources{
 	}
 	
 	void release() {
-		entryMutex.set(this,false);
+		entryMutex.setRelease(this,false);
 	}
 	
 	boolean getProcessingLock() {
