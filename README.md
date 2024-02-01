@@ -30,6 +30,7 @@ Use the **perelens-complete** artifact for Maven projects.
     <groupId>com.perelens</groupId>
     <artifactId>perelens-complete</artifactId>
     <version>1.0</version>
+    <type>pom</type>
 </dependency>
 ```
 
