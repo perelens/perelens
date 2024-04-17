@@ -125,9 +125,6 @@ public class FunctionKofN extends AbstractFailureFunction{
 	protected void process(Event curEvent) {
 		//Common processing for all states
 		if (curEvent != null) {
-			if (this.getId() == "system a") {
-				//System.out.println(curEvent);
-			}
 			//Only interested in FAILED or RETURN_TO_SERVICE events from dependencies
 			if (curEvent.getType() != FailureSimulationEvent.FS_FAILED && curEvent.getType() != FailureSimulationEvent.FS_RETURN_TO_SERVICE) {
 				return;
@@ -223,13 +220,6 @@ public class FunctionKofN extends AbstractFailureFunction{
 				setStateRestoring(curEvent);
 			}
 		}
-		
-		if (getId().equals("main cluster")) {
-			if (totalFailures > 0) {
-				//System.out.println("Total Failures = " + totalFailures + " . State = " + this.getState());
-			}
-		}
-		
 	}
 	
 	protected boolean shouldProcessMTFO(Event ev) {
