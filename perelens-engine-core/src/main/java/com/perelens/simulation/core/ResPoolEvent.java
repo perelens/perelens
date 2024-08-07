@@ -25,7 +25,7 @@ import com.perelens.simulation.events.ResourcePoolEvent;
  * @author Steve Branda
  *
  */
-final class ResPoolEvent extends AbstractEvent {
+public final class ResPoolEvent extends AbstractEvent {
 
 	public ResPoolEvent(String producerId, ResourcePoolEvent type, long time, long ordinal) {
 		super(producerId, type, time, ordinal);

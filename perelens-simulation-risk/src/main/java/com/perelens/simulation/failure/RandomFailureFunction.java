@@ -14,6 +14,7 @@ import com.perelens.engine.utils.Utils;
 import com.perelens.simulation.api.Distribution;
 import com.perelens.simulation.api.FunctionInfo;
 import com.perelens.simulation.api.RandomGenerator;
+import com.perelens.simulation.core.ResPoolEvent;
 import com.perelens.simulation.events.ResourcePoolEvent;
 import com.perelens.simulation.failure.events.FailureSimulationEvent;
 
