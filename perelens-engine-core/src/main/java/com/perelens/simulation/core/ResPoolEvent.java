@@ -27,6 +27,8 @@ import com.perelens.simulation.events.ResourcePoolEvent;
  */
 public final class ResPoolEvent extends AbstractEvent {
 
+	private long timeOpt = -1;
+	
 	public ResPoolEvent(String producerId, ResourcePoolEvent type, long time, long ordinal) {
 		super(producerId, type, time, ordinal);
 	}
@@ -40,6 +42,18 @@ public final class ResPoolEvent extends AbstractEvent {
 	@Override
 	public EventMagnitude getMagnitude() {
 		return null;
+	}
+
+	public long getTimeOptimization() {
+		return timeOpt;
+	}
+
+	public void setTimeOptimization(long timeOptimization) {
+		Utils.checkArgNotNegative(timeOptimization);
+		if (timeOpt != -1) {
+			throw new IllegalStateException(SimMsgs.alreadyInitialized());
+		}
+		this.timeOpt = timeOptimization;
 	}
 
 }

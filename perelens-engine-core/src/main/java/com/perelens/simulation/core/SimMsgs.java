@@ -24,6 +24,10 @@ class SimMsgs extends Msgs{
 	static String unknownDistributionSpec(String setup) {
 		return "Unknown distribution specification. Passed =" + setup;
 	}
+	
+	static String argumentIsFinal(String name) {
+		return name + " argument is final and may not be set more than once.";
+	}
 
 	public static String requestedBeforeReturned(String requestorId) {
 		return "Producer requested another resource before recieving and returning the resource from the previous request. Producer id = " + requestorId;

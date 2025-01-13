@@ -36,8 +36,6 @@ import com.perelens.simulation.events.ResourcePoolEvent;
  */
 class CoreResourcePoolTest extends RequestQueueAndMapTest{
 
-	
-	
 	@Override
 	protected RequestQueueAndMap newRequestQueueAndMap() {
 		return new CoreResourcePool("pool1",1);

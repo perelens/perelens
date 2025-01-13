@@ -25,18 +25,18 @@ import org.junit.jupiter.api.Test;
  * @author Steve Branda
  *
  */
-class TimeCallbackQueueTest {
+public class TimeCallbackQueueTest {
 	
-	protected TimeCallbackQueue newTimeCallbackQueue() {
-		return new TimeCallbackQueue();
+	protected TimeQueue newTimeCallbackQueue() {
+		return new TimeQueue();
 	}
 
 	/**
-	 * Test method for {@link com.perelens.engine.core.TimeCallbackQueue#tc_enqueue(long)}.
+	 * Test method for {@link com.perelens.engine.core.TimeQueue#tc_enqueue(long)}.
 	 */
 	@Test
 	void testTc_enqueue_dequeue_hasMore() {
-		TimeCallbackQueue tc = newTimeCallbackQueue();
+		TimeQueue tc = newTimeCallbackQueue();
 		
 		assertFalse(tc.tc_hasMore());
 		
@@ -74,11 +74,11 @@ class TimeCallbackQueueTest {
 	}
 
 	/**
-	 * Test method for {@link com.perelens.engine.core.TimeCallbackQueue#tc_peek()}.
+	 * Test method for {@link com.perelens.engine.core.TimeQueue#tc_peek()}.
 	 */
 	@Test
 	void testTc_peek() {
-		TimeCallbackQueue tc = newTimeCallbackQueue();
+		TimeQueue tc = newTimeCallbackQueue();
 		
 		assertFalse(tc.tc_hasMore());
 		
@@ -112,11 +112,11 @@ class TimeCallbackQueueTest {
 	}
 
 	/**
-	 * Test method for {@link com.perelens.engine.core.TimeCallbackQueue#syncInternalState(com.perelens.engine.core.TimeCallbackQueue)}.
+	 * Test method for {@link com.perelens.engine.core.TimeQueue#syncInternalState(com.perelens.engine.core.TimeQueue)}.
 	 */
 	@Test
 	void tc_testSyncInternalState() {
-		TimeCallbackQueue tc = newTimeCallbackQueue();
+		TimeQueue tc = newTimeCallbackQueue();
 		
 		assertFalse(tc.tc_hasMore());
 		
@@ -139,7 +139,7 @@ class TimeCallbackQueueTest {
 		
 		assertTrue(tc.tc_hasMore());
 		
-		TimeCallbackQueue tc2 = newTimeCallbackQueue();
+		TimeQueue tc2 = newTimeCallbackQueue();
 		
 		tc.syncInternalState(tc2);
 		

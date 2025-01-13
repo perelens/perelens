@@ -27,7 +27,7 @@ class TimePlusEventQueueTest extends TimeCallbackQueueTest{
 
 	
 	@Override
-	protected TimeCallbackQueue newTimeCallbackQueue() {
+	protected TimeQueue newTimeCallbackQueue() {
 		return new TimePlusEventQueue();
 	}
 	

@@ -21,13 +21,25 @@ import com.perelens.engine.utils.Utils;
  * @author Steve Branda
  *
  */
-class TimeCallbackQueue {
+public class TimeQueue {
 	
 	private static final long[] EMPTY_HEAP = new long[0];
 	
 	private long[] minheap = EMPTY_HEAP;
 	private int count = 0;
 	private int capacity = 0;
+	
+	
+	protected void setInitialCapacity(int initialCapacity) {
+		if (capacity == 0) {
+			if (initialCapacity > 0) {
+				capacity = initialCapacity;
+				minheap = new long[capacity + 1];
+			}
+		}else {
+			throw new IllegalStateException("Initial Capacity already set");
+		}
+	}
 	
 	protected void tc_enqueue(long val) {
 		if (count == capacity) {
@@ -69,11 +81,15 @@ class TimeCallbackQueue {
 		}
 	}
 	
+	protected int tc_size() {
+		return count;
+	}
+	
 	protected boolean tc_hasMore() {
 		return count > 0;
 	}
 	
-	protected void syncInternalState(TimeCallbackQueue toSync) {
+	protected void syncInternalState(TimeQueue toSync) {
 		Utils.checkNull(toSync);
 		if (this.minheap == EMPTY_HEAP) {
 			toSync.minheap = EMPTY_HEAP;

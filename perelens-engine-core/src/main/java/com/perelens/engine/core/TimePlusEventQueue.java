@@ -23,7 +23,7 @@ import com.perelens.engine.utils.Utils;
  * @author Steve Branda
  *
  */
-class TimePlusEventQueue extends TimeCallbackQueue {
+public class TimePlusEventQueue extends TimeQueue {
 
 	private static final Event[] EMPTY_HEAP = new Event[0];
 	

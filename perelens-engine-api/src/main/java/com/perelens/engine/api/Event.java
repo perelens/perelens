@@ -50,4 +50,12 @@ public interface Event {
 		return EventMagnitude.NO_MAGNITUDE;
 	};
 	
+	/**
+	 * Returns a positive long that can provide optimization information for event interactions
+	 * 
+	 * @return
+	 */
+	default long getTimeOptimization() {
+		return -1;
+	}
 }
