@@ -49,6 +49,10 @@ public class RandomFailureFunction extends AbstractFailureFunction {
 	
 	private long nextFailureTime = -1;
 	
+	//These fields support time optimized resource pools
+	private long nextReturnToServiceInterval = -1;
+	private long toBeginRestore = -1;
+	
 	private String resourcePool = null;
 	private Event repairResource = null;
 	
@@ -83,10 +87,14 @@ public class RandomFailureFunction extends AbstractFailureFunction {
 			setStateAvailable();
 		}else if (getState() == State.FAILED) {
 			if (!this.isReturnToServiceTimeSet()) {
-				//Must have been deferred by the resource pool during the last window so send a RENEW request
-				Event renew = new ResPoolEvent(getId(),ResourcePoolEvent.RP_RENEW,getWindowStart() + 1, getNextOrdinal(),ResourcePoolEvent.REQUEST_RESPONSE_TYPES);
-				raiseEvent(renew);
-				this.waitForResponse();
+				if (getRepairResource() == null) {
+					//Must have been deferred by the resource pool during the last window so send a RENEW request
+					var renew = new ResPoolEvent(getId(),ResourcePoolEvent.RP_RENEW,getWindowStart() + 1, getNextOrdinal(),ResourcePoolEvent.REQUEST_RESPONSE_TYPES);
+					raiseEvent(renew);
+					this.waitForResponse();
+				}else {
+					//Time optimized resource pool and just waiting to start repair so null op.
+				}
 			}else {
 				throw new IllegalStateException(FailureMsgs.badState());
 			}
@@ -96,18 +104,21 @@ public class RandomFailureFunction extends AbstractFailureFunction {
 	@Override
 	protected void postProcess() {
 		if (getRepairResource() != null) {
-			long resTime = getRepairResource().getTime();
-			
-			if (resTime > getWindowStart()) {
-				//repair resource was received in this time window, but will be kept at least until the next window
-				//Need to raise a DEFERRED event so the Resource Pool can complete this time window
-				Event defer = new ResPoolEvent(getId(),ResourcePoolEvent.RP_DEFER,getTimeProcessed(), getNextOrdinal());
-				raiseResponse(defer, getRepairResource());
-			}
-			
-			//Sanity check
-			if (getState() != State.RESTORING) {
-				throw new IllegalStateException(FailureMsgs.badState());
+			if (getRepairResource().getTimeOptimization() == -1) {
+				//Not Time optimized
+				long resTime = getRepairResource().getTime();
+
+				if (resTime > getWindowStart()) {
+					//repair resource was received in this time window, but will be kept at least until the next window
+					//Need to raise a DEFERRED event so the Resource Pool can complete this time window
+					Event defer = new ResPoolEvent(getId(),ResourcePoolEvent.RP_DEFER,getTimeProcessed(), getNextOrdinal());
+					raiseResponse(defer, getRepairResource());
+				}
+				
+				//Sanity check
+				if (getState() != State.RESTORING) {
+					throw new IllegalStateException(FailureMsgs.badState());
+				}
 			}
 		}
 	}
@@ -127,8 +138,9 @@ public class RandomFailureFunction extends AbstractFailureFunction {
 					//No resource pool configured so move to RESTORING immediately
 					setStateRestoring();
 				}else {
-					Event resRequest = new ResPoolEvent(
+					var resRequest = new ResPoolEvent(
 							getId(),ResourcePoolEvent.RP_REQUEST,getTimeProcessed(),getNextOrdinal(),ResourcePoolEvent.REQUEST_RESPONSE_TYPES);
+					resRequest.setTimeOptimization(getNextReturnToServiceInterval());
 					raiseEvent(resRequest);
 					super.waitForResponse();
 				}
@@ -141,9 +153,19 @@ public class RandomFailureFunction extends AbstractFailureFunction {
 				//Must be waiting for resource from the pool
 				if (curEvent != null) {
 					if (curEvent.getType() == ResourcePoolEvent.RP_GRANT) {
+						long tOpt = curEvent.getTimeOptimization();
+						if (tOpt >= curEvent.getTime()) {
+							//Time optimized resource pool
+							toBeginRestore = tOpt;
+							this.registerCallbackTime(getToBeginRestore());
+						}else {
+							//Not time optimized resource pool
+							setStateRestoring();
+						}
 						setRepairResource(curEvent);
-						setStateRestoring();
 					}
+				}else if(getTimeProcessed() == getToBeginRestore()){
+					setStateRestoring();
 				}
 			}else {
 				throw new IllegalStateException(FailureMsgs.badState());
@@ -153,7 +175,8 @@ public class RandomFailureFunction extends AbstractFailureFunction {
 		
 		if (getState() == State.RESTORING) {
 			if (getReturnToServiceTime() == getTimeProcessed()) {
-				if (getResourcePool() != null) {
+				if (getResourcePool() != null && getRepairResource().getTimeOptimization() == -1) {
+					//Not Time optimized
 					//Return the repair resource
 					Event retRes = new ResPoolEvent(getId(),ResourcePoolEvent.RP_RETURN,getReturnToServiceTime(), getNextOrdinal());
 					if (getRepairResource().getTime() > getWindowStart()) {
@@ -191,16 +214,17 @@ public class RandomFailureFunction extends AbstractFailureFunction {
 
 	private void setStateFailed() {
 		setState(State.FAILED);
+		
+		//Figure out the randomized repair time at the time of failure to support time optimized resource pools
+		double uniformRandom = repairGen.nextDouble();
+		double repairTime = repairDistribution.sample(uniformRandom);
+		nextReturnToServiceInterval = ((long)Math.ceil(repairTime)) + getRestoreTime();
 	}
 
 	protected void setStateRestoring() {
 		long repairStartTime = getTimeProcessed();
 		
-		//Figure out the randomized repair time
-		double uniformRandom = repairGen.nextDouble();
-		double repairTime = repairDistribution.sample(uniformRandom);
-		long repairTimeAdj = (long)Math.ceil(repairTime);
-		this.setReturnToServiceTime(repairStartTime + repairTimeAdj + getRestoreTime());
+		this.setReturnToServiceTime(repairStartTime + nextReturnToServiceInterval);
 		this.registerCallbackTime(getReturnToServiceTime());
 		
 		setState(State.RESTORING);
@@ -221,6 +245,14 @@ public class RandomFailureFunction extends AbstractFailureFunction {
 		toSync.nextFailureTime = this.nextFailureTime;
 		toSync.resourcePool = this.resourcePool;
 		toSync.repairResource = this.repairResource;
+	}
+	
+	protected long getNextReturnToServiceInterval() {
+		return nextReturnToServiceInterval;
+	}
+	
+	protected long getToBeginRestore() {
+		return toBeginRestore;
 	}
 	
 	protected long getNextFailureTime() {

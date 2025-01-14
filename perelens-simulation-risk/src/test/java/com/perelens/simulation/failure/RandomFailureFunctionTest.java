@@ -1045,4 +1045,321 @@ class RandomFailureFunctionTest {
 		assertEquals(100,repairCount);
 	}
 	
+	@Test
+	void testTimeOptimizedResourceRequestGrantInSameWindow() {
+		//Use non random arrival again
+		DistributionProvider dp = new CoreDistributionProvider();
+		Distribution df = dp.exponential(1000);
+		Distribution dr = dp.exponential(100);
+
+		RandomFailureFunction rff = new RandomFailureFunction("rff1",df,dr);
+
+		FunctionInfo fi = new TestFunctionInfo() {
+			
+			@Override
+			public Set<String> getResourcePools() {
+				return Collections.singleton("pool1");
+			}
+
+			@Override
+			public RandomGenerator getRandomGenerator() {
+				return new RandomGenerator() {
+
+					private static final long serialVersionUID = 1L;
+
+					@Override
+					public double nextDouble() {
+						return 0.5;
+					}
+
+					@Override
+					public String getRandomSetup() {
+						return "constant";
+					}
+
+					@Override
+					public RandomGenerator copy() {
+						throw new IllegalStateException("not implemented");
+					}
+
+				};
+			}
+
+			@Override
+			public TimeTranslator getTimeTranslator() {
+				
+				return null;
+			}
+
+		};
+
+		rff.initiate(fi);
+
+		long nextFailureTime = (long)df.sample(0.5);
+		//Make the window big enough to contain the entire resource pool interaction
+		//but not big enough to contain two failures
+		long nextWindowTime = nextFailureTime + nextFailureTime;
+		
+		TestResources tr = new TestResources(Collections.emptyList());
+		rff.consume(nextWindowTime, tr);
+		
+		assertEquals(2,tr.getRaisedEvents().size()); //Fail event an resource pool request
+		assertEquals(0,tr.getRaisedResponses().size());
+		
+		Iterator<Event> events = tr.getRaisedEvents().iterator();
+		Event failEvent = events.next();
+		assertEquals(FailureSimulationEvent.FS_FAILED, failEvent.getType());
+		assertEquals(nextFailureTime,failEvent.getTime());
+		assertEquals(rff.getId(), failEvent.getProducerId());
+		
+		Event resourceRequest = events.next();
+		assertEquals(ResourcePoolEvent.RP_REQUEST,resourceRequest.getType());
+		assertEquals(nextFailureTime,resourceRequest.getTime());
+		assertEquals(rff.getId(), resourceRequest.getProducerId());
+		assertEquals(resourceRequest.getTimeOptimization(), rff.getNextReturnToServiceInterval());
+		
+		assertFalse(events.hasNext());
+		
+		//Inject the RP_GRANTED request so repair can start
+		long grantTime = nextFailureTime + 43;
+		long rtsTime =  grantTime + (long)Math.ceil(dr.sample(0.5));
+		var grantedEvent = new ResPoolEvent("pool1",ResourcePoolEvent.RP_GRANT,grantTime,ordinal++,ResourcePoolEvent.GRANT_RESPONSE_TYPES);
+		grantedEvent.setTimeOptimization(grantTime);
+		tr = new TestResources(Collections.singletonList(grantedEvent));
+		
+		rff.consume(nextWindowTime, tr);
+		
+		assertEquals(1, tr.getRaisedEvents().size()); 		//The RETURN_TO_SERVICE event
+		assertEquals(0, tr.getRaisedResponses().size()); 	//The RP_RETURN response event
+		
+		events = tr.getRaisedEvents().iterator();
+		Event rtsEvent = events.next();
+		assertEquals(FailureSimulationEvent.FS_RETURN_TO_SERVICE, rtsEvent.getType());
+		assertEquals(rtsTime, rtsEvent.getTime());
+		assertEquals(rff.getId(),rtsEvent.getProducerId());
+		assertFalse(events.hasNext());
+		
+		Iterator<ResponseEntry> re = tr.getRaisedResponses().iterator();
+		assertFalse(re.hasNext());
+	}
+	
+	@Test
+	void testTimeOptimizedResourceRequestGrantAndReturnInDifferentWindows() {
+		//Use non random arrival again
+		DistributionProvider dp = new CoreDistributionProvider();
+		Distribution df = dp.exponential(1000);
+		Distribution dr = dp.exponential(100);
+
+		RandomFailureFunction rff = new RandomFailureFunction("rff1",df,dr);
+
+		FunctionInfo fi = new TestFunctionInfo() {
+			
+			
+
+			@Override
+			public Set<String> getResourcePools() {
+				return Collections.singleton("pool1");
+			}
+
+			@Override
+			public RandomGenerator getRandomGenerator() {
+				return new RandomGenerator() {
+
+					private static final long serialVersionUID = 1L;
+
+					@Override
+					public double nextDouble() {
+						return 0.5;
+					}
+
+					@Override
+					public String getRandomSetup() {
+						return "constant";
+					}
+
+					@Override
+					public RandomGenerator copy() {
+						throw new IllegalStateException("not implemented");
+					}
+
+				};
+			}
+
+			@Override
+			public TimeTranslator getTimeTranslator() {
+				
+				return null;
+			}
+
+		};
+
+		rff.initiate(fi);
+
+		long nextFailureTime = (long)df.sample(0.5);
+		long repairInterval = (long)Math.ceil(dr.sample(0.5));
+		//Size the window so the repair time pushes the resource return into the next window
+		long nextWindowTime = nextFailureTime + repairInterval/2;
+		
+		TestResources tr = new TestResources(Collections.emptyList());
+		rff.consume(nextWindowTime, tr);
+		
+		assertEquals(2,tr.getRaisedEvents().size()); //Fail event an resource pool request
+		assertEquals(0,tr.getRaisedResponses().size());
+		
+		Iterator<Event> events = tr.getRaisedEvents().iterator();
+		Event failEvent = events.next();
+		assertEquals(FailureSimulationEvent.FS_FAILED, failEvent.getType());
+		assertEquals(nextFailureTime,failEvent.getTime());
+		assertEquals(rff.getId(), failEvent.getProducerId());
+		
+		Event resourceRequest = events.next();
+		assertEquals(ResourcePoolEvent.RP_REQUEST,resourceRequest.getType());
+		assertEquals(nextFailureTime,resourceRequest.getTime());
+		assertEquals(rff.getId(), resourceRequest.getProducerId());
+		assertEquals(resourceRequest.getTimeOptimization(), rff.getNextReturnToServiceInterval());
+		
+		assertFalse(events.hasNext());
+		
+		//Inject the RP_GRANTED request so repair can start
+		long grantTime = nextFailureTime + 3;
+		long rtsTime =  grantTime + repairInterval;
+		var grantedEvent = new ResPoolEvent("pool1",ResourcePoolEvent.RP_GRANT,grantTime,ordinal++,ResourcePoolEvent.GRANT_RESPONSE_TYPES);
+		grantedEvent.setTimeOptimization(grantTime);
+		tr = new TestResources(Collections.singletonList(grantedEvent));
+		
+		rff.consume(nextWindowTime, tr);
+		
+		assertEquals(0, tr.getRaisedEvents().size()); 		
+		assertEquals(0, tr.getRaisedResponses().size()); 	//No RP_DEFER with time optimization
+		
+		//invoke the next window where the repair and return should happen
+		tr = new TestResources(Collections.emptyList());
+		
+		rff.consume(nextWindowTime * 2, tr);
+		assertEquals(1, tr.getRaisedEvents().size()); 		//The RETURN_TO_SERVICE.  No RP_RETURN with time optimization
+		assertEquals(0, tr.getRaisedResponses().size());
+		
+		events = tr.getRaisedEvents().iterator();
+		
+		Event rtsEvent = events.next();
+		assertEquals(FailureSimulationEvent.FS_RETURN_TO_SERVICE, rtsEvent.getType());
+		assertEquals(rtsTime, rtsEvent.getTime());
+		assertEquals(rff.getId(),rtsEvent.getProducerId());
+		
+		assertFalse(events.hasNext());
+	}
+	
+	@Test
+	void testTimeOptimizedResourceRequestGrantAndReturnOverMultipleWindows() {
+		//Use non random arrival again
+		DistributionProvider dp = new CoreDistributionProvider();
+		Distribution df = dp.exponential(1000);
+		Distribution dr = dp.exponential(100);
+
+		RandomFailureFunction rff = new RandomFailureFunction("rff1",df,dr);
+
+		FunctionInfo fi = new TestFunctionInfo() {
+			
+			
+
+			@Override
+			public Set<String> getResourcePools() {
+				return Collections.singleton("pool1");
+			}
+
+			@Override
+			public RandomGenerator getRandomGenerator() {
+				return new RandomGenerator() {
+
+					private static final long serialVersionUID = 1L;
+
+					@Override
+					public double nextDouble() {
+						return 0.5;
+					}
+
+					@Override
+					public String getRandomSetup() {
+						return "constant";
+					}
+
+					@Override
+					public RandomGenerator copy() {
+						throw new IllegalStateException("not implemented");
+					}
+
+				};
+			}
+
+			@Override
+			public TimeTranslator getTimeTranslator() {
+				
+				return null;
+			}
+
+		};
+
+		rff.initiate(fi);
+
+		long nextFailureTime = (long)df.sample(0.5);
+		long repairInterval = (long)Math.ceil(dr.sample(0.5));
+		long nextWindowTime = nextFailureTime + repairInterval/2;
+		
+		TestResources tr = new TestResources(Collections.emptyList());
+		rff.consume(nextWindowTime, tr);
+		
+		assertEquals(2,tr.getRaisedEvents().size()); //Fail event an resource pool request
+		assertEquals(0,tr.getRaisedResponses().size());
+		
+		Iterator<Event> events = tr.getRaisedEvents().iterator();
+		Event failEvent = events.next();
+		assertEquals(FailureSimulationEvent.FS_FAILED, failEvent.getType());
+		assertEquals(nextFailureTime,failEvent.getTime());
+		assertEquals(rff.getId(), failEvent.getProducerId());
+		
+		Event resourceRequest = events.next();
+		assertEquals(ResourcePoolEvent.RP_REQUEST,resourceRequest.getType());
+		assertEquals(nextFailureTime,resourceRequest.getTime());
+		assertEquals(rff.getId(), resourceRequest.getProducerId());
+		assertEquals(resourceRequest.getTimeOptimization(), rff.getNextReturnToServiceInterval());
+		
+		assertFalse(events.hasNext());
+		
+		//Inject the RP_GRANTED request but set time optimization so the resource cannot be used for multiple windows
+		long grantTime = nextFailureTime + 3;
+		var grantedEvent = new ResPoolEvent("pool1",ResourcePoolEvent.RP_GRANT,grantTime,ordinal++,ResourcePoolEvent.GRANT_RESPONSE_TYPES);
+		grantedEvent.setTimeOptimization(nextWindowTime*3);
+		tr = new TestResources(Collections.singletonList(grantedEvent));
+		
+		rff.consume(nextWindowTime, tr);
+		
+		assertEquals(0, tr.getRaisedEvents().size()); 		
+		assertEquals(0, tr.getRaisedResponses().size()); 	//No RP_DEFER with time optimization
+		
+		//invoke the next window where nothing should happen
+		tr = new TestResources(Collections.emptyList());
+		
+		rff.consume(nextWindowTime * 2, tr);
+		assertEquals(0, tr.getRaisedEvents().size()); 		//No RETURN_TO_SERVICE.  No RP_RETURN with time optimization
+		assertEquals(0, tr.getRaisedResponses().size());
+		
+		tr = new TestResources(Collections.emptyList());
+		rff.consume(nextWindowTime * 3, tr);
+		assertEquals(0, tr.getRaisedEvents().size()); 		//No RETURN_TO_SERVICE.  No RP_RETURN with time optimization
+		assertEquals(0, tr.getRaisedResponses().size());
+		
+		tr = new TestResources(Collections.emptyList());
+		rff.consume(nextWindowTime * 4, tr);
+		assertEquals(1, tr.getRaisedEvents().size()); 		//The RETURN_TO_SERVICE.  No RP_RETURN with time optimization
+		assertEquals(0, tr.getRaisedResponses().size());
+		
+		events = tr.getRaisedEvents().iterator();
+		
+		Event rtsEvent = events.next();
+		assertEquals(FailureSimulationEvent.FS_RETURN_TO_SERVICE, rtsEvent.getType());
+		assertEquals(nextWindowTime*3 + repairInterval, rtsEvent.getTime());
+		assertEquals(rff.getId(),rtsEvent.getProducerId());
+		
+		assertFalse(events.hasNext());
+	}
 }

@@ -3,11 +3,13 @@
  */
 package com.perelens.simulation.core;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
 import com.perelens.engine.api.ConfigKey;
 import com.perelens.engine.api.Event;
+import com.perelens.engine.api.EventFilter;
 import com.perelens.engine.api.EventGenerator;
 import com.perelens.engine.api.ResponderResources;
 import com.perelens.engine.core.TimeQueue;
@@ -37,6 +39,13 @@ import com.perelens.simulation.events.ResourcePoolEvent;
 public class CoreTimeOptimizedResourcePool extends TimeQueue implements ResourcePool{
 
 
+	private static final EventFilter EXCLUSIVE_FILTER = new EventFilter() {
+		@Override
+		public boolean filter(Event event) {
+			return event.getType() instanceof ResourcePoolEvent;
+		}
+	};
+	
 	private final String id;
 	private int limit;
 	private long ordinal = 1;
@@ -54,6 +63,20 @@ public class CoreTimeOptimizedResourcePool extends TimeQueue implements Resource
 		}
 		this.limit = limit;
 		setInitialCapacity(limit);
+	}
+	
+	@Override
+	public EventFilter getEventFilter() {
+		return EXCLUSIVE_FILTER;
+	}
+	
+	@Override
+	public Comparator<ResourcePoolEvent> getEventTypeComparator() {
+		//RENEW events must be ordered before REQUEST events if they have the same time
+		//Uses ordering of the enum declaration in ResourcePoolEvent
+		return (a1,a2)->{
+			return a1.compareTo(a2);
+		};
 	}
 
 	@Override
@@ -84,6 +107,8 @@ public class CoreTimeOptimizedResourcePool extends TimeQueue implements Resource
 					
 					ResPoolEvent eg = new ResPoolEvent(getId(),ResourcePoolEvent.RP_GRANT,curTime,getNextOrdinal());
 					eg.setTimeOptimization(timeWhenUsable);
+					System.out.println(e.getProducerId());
+					System.out.println(eg); //TODO Remove
 					resources.raiseResponse(eg, e);
 					
 					long timeToAdd = timeWhenUsable + timeNeeded;
@@ -121,5 +146,6 @@ public class CoreTimeOptimizedResourcePool extends TimeQueue implements Resource
 	
 	@Override
 	public void initiate(BasicInfo info) {
+		System.out.println(info.getDependencies());
 	}
 }

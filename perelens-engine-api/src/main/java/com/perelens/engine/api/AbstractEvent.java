@@ -130,6 +130,7 @@ public abstract class AbstractEvent implements Event {
 	           .append(prefix).append("  getType() = ").append(toWrite.getType()).append('\n')
 	           .append(prefix).append("  getProducerId() = ").append(toWrite.getProducerId()).append('\n')
 	           .append(prefix).append("  getTime() = ").append(toWrite.getTime()).append('\n')
+	           .append(prefix).append("  getTimeOptimization = ").append(toWrite.getTimeOptimization()).append('\n')
 	           .append(prefix).append("  getOrdinal() = ").append(toWrite.getOrdinal()).append('\n')
 	           .append(prefix).append("  causedBy() = ").append('\n');
 		

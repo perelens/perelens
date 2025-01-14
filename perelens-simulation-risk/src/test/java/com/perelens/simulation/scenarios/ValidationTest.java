@@ -5,6 +5,7 @@ import java.util.Collections;
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
 
+import com.perelens.engine.api.EngineExecutionException;
 import com.perelens.simulation.api.Distribution;
 import com.perelens.simulation.api.DistributionProvider;
 import com.perelens.simulation.api.Function;
@@ -46,6 +47,10 @@ import com.perelens.simulation.utils.Relationships;
  *
  */
 class ValidationTest {
+	
+	protected ResourcePool getResourcePool(String id, int limit) {
+		return new CoreResourcePool(id, limit);
+	}
 
 	protected SimulationBuilder setupSingleSpare4NodeCluster() {
 		SimulationBuilder toReturn = new CoreSimulationBuilder();
@@ -124,7 +129,7 @@ class ValidationTest {
 		
 		Function node1 = new RandomFailureFunction("subsystem.1",failure,repair);
 		Function node2 = new RandomFailureFunction("subsystem.2",failure,repair);
-		ResourcePool pool = new CoreResourcePool("repair pool", 1); 
+		ResourcePool pool = getResourcePool("repair pool", 1); 
 		
 		Function cluster = new FunctionKofN("system",1,2);
 		
@@ -321,7 +326,7 @@ class ValidationTest {
 			.addDependency(toReturn.getFunction("b.system.subsystem.1"))
 			.addDependency(toReturn.getFunction("b.system.subsystem.2"));
 		
-		ResourcePool pool = new CoreResourcePool("repair pool",4);
+		ResourcePool pool = getResourcePool("repair pool",4);
 		toReturn.addResourcePool(pool);
 		
 		toReturn.getFunction("a.system.subsystem.1").addResourcePool(pool.getId());
@@ -343,7 +348,7 @@ class ValidationTest {
 		Distribution failure = dp.exponential(mtbf);
 		Distribution repair = dp.exponential(mtr);
 		
-		ResourcePool pool = new CoreResourcePool("repair pool",1);
+		ResourcePool pool = getResourcePool("repair pool",1);
 		toReturn.addResourcePool(pool);
 		
 		Function node1 = new RandomFailureFunction("a.system.subsystem.1",failure,repair);
@@ -430,8 +435,10 @@ class ValidationTest {
 		
 		s.start(3_000_000_000l); //5700 years in minutes
 		s.join();
-		assertEquals(0.999882, avail.getAvailability(), 0.00005);
+		
 		System.out.println("Single Spare 4 Node Cluster: " + 0.999882 + ", " + avail.getAvailability());
+		assertEquals(0.999882, avail.getAvailability(), 0.00005);
+		
 		
 		s.destroy();
 	}
@@ -455,8 +462,8 @@ class ValidationTest {
 		
 		s.start(3_000_000_000l); //5700 years in minutes
 		s.join();
-		assertEquals(0.999999,avail.getAvailability(), 0.0000005);
 		System.out.println("Dual Subsystem Model PR: " + 0.999999 + ", " + avail.getAvailability());
+		assertEquals(0.999999,avail.getAvailability(), 0.0000005);
 		
 		s.destroy();
 	}
@@ -480,8 +487,10 @@ class ValidationTest {
 		
 		s.start(3_000_000_000l); //5700 years in minutes
 		s.join();
-		assertEquals(0.999998,avail.getAvailability(), 0.000005);
+		
 		System.out.println("Dual Subsystem Model SR: " + 0.999998 + ", " + avail.getAvailability());
+		assertEquals(0.999998,avail.getAvailability(), 0.000005);
+		
 		
 		s.destroy();
 	}
@@ -500,9 +509,10 @@ class ValidationTest {
 		
 		s.start(3_000_000_000l); //5700 years in minutes
 		s.join();
-		assertEquals(0.9999,avail.getAvailability(), 0.00005);
 		
 		System.out.println("Active Backup Vol2 p121: " + 0.9999 + ", " + avail.getAvailability());
+		assertEquals(0.9999,avail.getAvailability(), 0.00005);
+	
 		
 		s.destroy();
 	}
@@ -521,9 +531,10 @@ class ValidationTest {
 		
 		s.start(3_000_000_000l * 60); //5700 years in seconds
 		s.join();
-		assertEquals(0.99999995,avail.getAvailability(), 0.00000005);
 		
 		System.out.println("Active Active Vol2 p122: " + 0.99999995 + ", " + avail.getAvailability());
+		assertEquals(0.99999995,avail.getAvailability(), 0.00000005);
+		
 		
 		s.destroy();
 	}
@@ -542,9 +553,8 @@ class ValidationTest {
 		
 		s.start(3_000_000_000l); //5700 years in minutes
 		s.join();
-		assertEquals(0.99968,avail.getAvailability(), 0.0005);
-		
 		System.out.println("Single Spare 16 Node Cluster: " + 0.99968 + ", " + avail.getAvailability());
+		assertEquals(0.99968,avail.getAvailability(), 0.0005);
 		
 		s.destroy();
 	}
@@ -598,14 +608,21 @@ class ValidationTest {
 		AvailabilityConsumer avail_B = new AvailabilityConsumer("availability b");
 		s.subscribeToEvents(avail_B, Collections.singletonList("b.system"));
 		
-		s.start(3_000_000_000l); //5700 years in minutes
-		s.join();
-		
-		assertEquals(0.999999,avail_A.getAvailability(), 0.0000005);
-		assertEquals(0.999999,avail_B.getAvailability(), 0.0000005);
+		try {
+			s.start(3_000_000_000l); //5700 years in minutes
+			s.join();
+		}catch (EngineExecutionException e) {
+			for (Throwable t: e.getCauses()) {
+				t.printStackTrace();
+			}
+			fail();
+		}
 		
 		System.out.println("2x Dual Subsystem with Unconstrained Resource Pool A" + 0.999999 + ", " + avail_A.getAvailability());
 		System.out.println("2x Dual Subsystem with Unconstrained Resource Pool B" + 0.999999 + ", " + avail_B.getAvailability());
+		
+		assertEquals(0.999999,avail_A.getAvailability(), 0.0000005);
+		assertEquals(0.999999,avail_B.getAvailability(), 0.0000005);
 		
 		s.destroy();
 	}
@@ -638,13 +655,15 @@ class ValidationTest {
 		s.start(60_000_000_000l); //114000 years in minutes
 		s.join();
 		
+		double totalFailure = (1 - avail_A.getAvailability()) + (1 - avail_B.getAvailability());
+		
+		System.out.println("Dual Subsystem Model Constrained Repair: " + 0.0000040015 + ", " + totalFailure);
+		
 		assertTrue(avail_A.getAvailability() < 0.9999985);
 		assertTrue(avail_B.getAvailability() < 0.9999985);
 		
 		assertTrue(avail_A.getAvailability() > 0.999996);
 		assertTrue(avail_B.getAvailability() > 0.999996);
-		
-		double totalFailure = (1 - avail_A.getAvailability()) + (1 - avail_B.getAvailability());
 		
 		assertEquals(0.0000040015, totalFailure, 0.0000005);
 		
@@ -677,9 +696,9 @@ class ValidationTest {
 		s.start(3_000_000_000l); //5700 years in minutes
 		s.join();
 		
-		assertEquals(0.99347,avail.getAvailability(), 0.0005);
 		
 		System.out.println("1000 Single Spare 16 Node Clusters: " + 0.99347 + ", " + avail.getAvailability());
+		assertEquals(0.99347,avail.getAvailability(), 0.0005);
 		
 		s.destroy();
 	}
