@@ -34,7 +34,11 @@ import com.perelens.simulation.statistics.SampledStatistic;
  */
 class SimulationAccuracyTest {
 	
-	private ValidationTest scenarios = new ValidationTest();
+	private ValidationTest scenarios = getScenarios();
+	
+	protected ValidationTest getScenarios() {
+		return new ValidationTest();
+	}
 	@Test
 	void test1000SingleSpare16NodeCluster() throws Throwable {
 		SimulationBuilder builder = scenarios.setup1000SingleSpare16NodeClusters();

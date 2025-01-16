@@ -127,10 +127,6 @@ public class CoreTimeOptimizedResourcePool extends TimePlusEventQueue implements
 			
 			if (eIter.hasNext()) {
 				e = eIter.next();
-
-				if (e.getTime() == 14730526) {
-					System.out.println();
-				}
 			}
 			
 			if (this.ev_hasMore()) {
@@ -207,6 +203,12 @@ public class CoreTimeOptimizedResourcePool extends TimePlusEventQueue implements
 				throw new IllegalStateException();
 			}
 		}	
+		
+		if (this.ev_hasMore()) {
+			//Need to make sure this EventResponder gets called again until the Event queue is drained
+			//TODO figure out if this is making things slow
+			resources.keepActive();
+		}
 	}
 	
 	private void grantResourceRequest(Event inResponseTo, long curTime, long timeNeeded, ResponderResources resources) {
@@ -219,11 +221,7 @@ public class CoreTimeOptimizedResourcePool extends TimePlusEventQueue implements
 		long timeToAdd = timeWhenUsable + timeNeeded;
 		ResPoolEvent eg = new ResPoolEvent(getId(),ResourcePoolEvent.RP_GRANT,curTime,getNextOrdinal());
 		eg.setTimeOptimization(timeWhenUsable);
-		//TODO Remove
-		//System.out.println(inResponseTo.getProducerId());
-		//System.out.println(eg);
 		resources.raiseResponse(eg, inResponseTo);
-
 		if (timeToAdd < eventCutOffTime) {
 			eventCutOffTime = timeToAdd;
 		}

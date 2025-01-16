@@ -100,7 +100,7 @@ class SubEntry implements Iterable<Event>,ConsumerResources{
 			throw new IllegalStateException(EngineMsgs.badState());
 		}
 		
-		return dependenciesAreComplete();
+		return completeDeps == depIndex;
 	}
 	
 	boolean dependenciesAreComplete() {

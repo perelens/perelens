@@ -124,9 +124,6 @@ public class CoreResourcePool extends RequestQueueAndMap implements ResourcePool
 				throw new IllegalStateException(SimMsgs.resourceRenewRequired(requestKey));
 			}
 			Event eg = new ResPoolEvent(getId(),ResourcePoolEvent.RP_GRANT,getTimeProcessed(),getNextOrdinal(),ResourcePoolEvent.GRANT_RESPONSE_TYPES);
-			//TODO remove
-			//System.out.println(request.getProducerId());
-			//System.out.println(eg);
 			raiseResponse(eg, request);
 			super.waitForResponse();
 			granted++;

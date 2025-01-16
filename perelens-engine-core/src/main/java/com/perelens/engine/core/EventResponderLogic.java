@@ -219,5 +219,10 @@ class EventResponderLogic implements Runnable{
 		public Iterable<Event> getEvents() {
 			return toEval;
 		}
+
+		@Override
+		public void keepActive() {
+			toEval.registerAsActive();
+		}
 	}
 }

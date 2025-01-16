@@ -72,4 +72,9 @@ public class TestResources implements EvaluatorResources{
 	public Collection<ResponseEntry> getRaisedResponses(){
 		return responses;
 	}
+
+
+	@Override
+	public void keepActive() {
+	}
 }

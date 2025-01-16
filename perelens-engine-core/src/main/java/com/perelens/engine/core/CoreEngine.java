@@ -243,6 +243,7 @@ public class CoreEngine implements Engine {
 					ArrayList<RespEntry> te = new ArrayList<RespEntry>(activeResponders.values());
 					activeResponders.clear();
 					for (RespEntry e : te) {
+						e.deregisterAsActive();
 						if (!e.isComplete()){
 							enqueue(e,targetOffset);
 						}

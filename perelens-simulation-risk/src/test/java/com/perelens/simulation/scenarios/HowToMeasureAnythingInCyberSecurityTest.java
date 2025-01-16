@@ -688,9 +688,6 @@ class HowToMeasureAnythingInCyberSecurityTest {
 		@Override
 		protected void processEvent(Event currentEvent) {
 			while (currentEvent.getTime() >= yearMarker) {
-//				if (getId().startsWith("residual")){
-//					System.out.println(total);
-//				}
 				losses.add(total);
 				total = 0;
 				yearMarker += yearUnits;

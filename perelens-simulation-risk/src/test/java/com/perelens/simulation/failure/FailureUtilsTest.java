@@ -64,9 +64,6 @@ class FailureUtilsTest {
 		
 		for (double i = 0.0; i < 1.0; i += 0.01) {
 			boolean val = FailureUtils.processFails(1.0, i);
-			if (!val) {
-				System.out.println();
-			}
 			assertTrue(val); //Should always be true because 100% chance of failure
 		}
 		

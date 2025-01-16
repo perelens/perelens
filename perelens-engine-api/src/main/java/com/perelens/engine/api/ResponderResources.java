@@ -28,4 +28,11 @@ public interface ResponderResources extends ConsumerResources {
 	 * @param inResponseTo
 	 */
 	public void raiseResponse(Event toRaise, Event inResponseTo);
+	
+	
+	/**
+	 * Keeps a responder active for one more call to consume() within the current time window.
+	 * 
+	 */
+	public void keepActive();
 }

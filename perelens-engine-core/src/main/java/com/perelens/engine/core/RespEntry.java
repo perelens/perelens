@@ -22,9 +22,12 @@ import com.perelens.engine.api.EventGenerator;
  */
 public class RespEntry extends SubEntry {
 
-	private boolean complete = false;												//Marked true when this EventConsumer is finished executing during the current time window
+	//Marked true when this EventConsumer is finished executing during the current time window
+	private boolean complete = false;	
+	private boolean registered = false;
 	
-	private Event[] needResponse = com.perelens.engine.utils.Utils.EMPTY_QUEUE;		//Events requiring response before this EventEvaluator can finish executing for the given time window
+	//Events requiring response before this EventEvaluator can finish executing for the given time window
+	private Event[] needResponse = com.perelens.engine.utils.Utils.EMPTY_QUEUE;		
 	private int rIndex = 0;                         								//Current index in needResponse list
 	
 	RespEntry(EventGenerator object, CoreEngine engine) {
@@ -102,6 +105,13 @@ public class RespEntry extends SubEntry {
 	}
 	
 	void registerAsActive() {
-		engine.activeResponder(this);
+		if (!registered) {
+			engine.activeResponder(this);
+			registered = true;
+		}
+	}
+	
+	void deregisterAsActive() {
+		registered = false;
 	}
 }

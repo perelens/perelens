@@ -107,6 +107,9 @@ public abstract class AbstractEventGenerator<R extends ResponderResources> exten
 	protected void postProcess() {};
 	
 	final public void consume(long timeWindow, R resources) {
+		if ("repair pool".equals(getId())) {
+			System.out.println();
+		}
 		this.resources = resources;
 		long eventTimeCutoff = Long.MAX_VALUE;
 		
