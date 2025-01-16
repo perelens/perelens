@@ -243,7 +243,9 @@ public class CoreEngine implements Engine {
 					ArrayList<RespEntry> te = new ArrayList<RespEntry>(activeResponders.values());
 					activeResponders.clear();
 					for (RespEntry e : te) {
-						enqueue(e,targetOffset);
+						if (!e.isComplete()){
+							enqueue(e,targetOffset);
+						}
 					}
 
 					waitForExecution();
@@ -319,6 +321,9 @@ public class CoreEngine implements Engine {
 			}
 			
 			if (throwables.size() > 0) {
+				for (var t:throwables) {
+					t.printStackTrace();
+				}
 				//throw a runtime exception to kill the simulation
 				throw new EngineExecutionException(EngineMsgs.badState(), throwables);
 			}

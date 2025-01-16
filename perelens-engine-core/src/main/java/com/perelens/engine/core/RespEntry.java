@@ -64,13 +64,23 @@ public class RespEntry extends SubEntry {
 		rIndex++;
 	}
 	
+	@Override
+	void prepareForNextInterval(long interval) {
+		super.prepareForNextInterval(interval);
+		complete = false;
+	}
+
 	//Time interval processing methods
 	boolean isComplete() {
 		return complete;
 	}
 
 	void markComplete() {
-		complete = true;
+		if (!complete) {
+			complete = true;
+		}else {
+			throw new IllegalStateException();
+		}
 	}
 	
 	//Evaluation Logic Methods

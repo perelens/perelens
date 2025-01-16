@@ -12,7 +12,8 @@ import com.perelens.engine.api.Event;
 import com.perelens.engine.api.EventFilter;
 import com.perelens.engine.api.EventGenerator;
 import com.perelens.engine.api.ResponderResources;
-import com.perelens.engine.core.TimeQueue;
+import com.perelens.engine.core.CoreUtils;
+import com.perelens.engine.core.TimePlusEventQueue;
 import com.perelens.engine.utils.Utils;
 import com.perelens.simulation.api.BasicInfo;
 import com.perelens.simulation.api.ResourcePool;
@@ -36,7 +37,7 @@ import com.perelens.simulation.events.ResourcePoolEvent;
    
  * @author Steve Branda 
  */
-public class CoreTimeOptimizedResourcePool extends TimeQueue implements ResourcePool{
+public class CoreTimeOptimizedResourcePool extends TimePlusEventQueue implements ResourcePool{
 
 
 	private static final EventFilter EXCLUSIVE_FILTER = new EventFilter() {
@@ -49,13 +50,36 @@ public class CoreTimeOptimizedResourcePool extends TimeQueue implements Resource
 	private final String id;
 	private int limit;
 	private long ordinal = 1;
+	private int dependencyCount = 0;
+	private final double scaleFactor;
 	
 	public static enum CONFIG_KEYS implements ConfigKey{
 		CRP_LIMIT;
 	}
 	
+	/**
+	 * Initializes a ResourcePool with a scaleFactor of zero, which is the most conservative and accurate value.
+	 * 
+	 * @param id
+	 * @param limit - Number of total resources to grant before requests start to queue up
+	 */
 	public CoreTimeOptimizedResourcePool(String id, int limit) {
+		this(id,limit,0.0);
+	}
+	
+	/**
+	 * Initializes a ResourcePool with a customized scaleFactor.
+	 * A scale factor of 0.0 will ensure that no events get processed out of order
+	 * A scale factor of 1.0 will remove all protection against events getting processed out of order.
+	 * A scale factor of 0.5 will begin ensuring that no events get processed out of order once 50% of the limit has been reached.
+	 * 
+	 * @param id
+	 * @param limit	- Number of total resources to grant before requests start to queue up
+	 * @param scaleFactor - double value between 0.0 and 1.0
+	 */
+	public CoreTimeOptimizedResourcePool(String id, int limit, double scaleFactor) {
 		Utils.checkId(id);
+		Utils.checkPercentage(scaleFactor);
 		this.id = id;
 		
 		if (limit < 1) {
@@ -63,6 +87,8 @@ public class CoreTimeOptimizedResourcePool extends TimeQueue implements Resource
 		}
 		this.limit = limit;
 		setInitialCapacity(limit);
+		this.scaleFactor = scaleFactor; //Invert the value
+		this.setComparator(CoreUtils.getEventComparator(this.getEventTypeComparator()));
 	}
 	
 	@Override
@@ -84,48 +110,125 @@ public class CoreTimeOptimizedResourcePool extends TimeQueue implements Resource
 		var tr = new CoreTimeOptimizedResourcePool(id,limit);
 		return tr;
 	}
-
+	
+	//EventCutOffTime is the earliest time an out of order request could come in a future method call
+	//It will be safe to process any requests with a time before EventCutOffTime
+	private long eventCutOffTime = Long.MAX_VALUE;
 	@Override
 	public void consume(long timeWindow, ResponderResources resources) {
-		for (Event e : resources.getEvents()) {
+		String firstDep = Utils.EMPTY_STRING;
+		eventCutOffTime = Long.MAX_VALUE;
+		boolean singleProducer = true;
+		
+		var eIter = resources.getEvents().iterator();
+		
+		while(eIter.hasNext() || (this.ev_hasMore() && this.ev_peek().getTime() < eventCutOffTime)) {
+			Event e = null;
+			
+			if (eIter.hasNext()) {
+				e = eIter.next();
+
+				if (e.getTime() == 14730526) {
+					System.out.println();
+				}
+			}
+			
+			if (this.ev_hasMore()) {
+				if (e == null) {
+					e = this.ev_dequeue();
+				}else if (e.getTime() >= this.ev_peek().getTime()) {
+					this.ev_enqueue(e);
+					e = this.ev_dequeue();
+				}
+			}
+			
 			if (e.getType() == ResourcePoolEvent.RP_REQUEST) {
+				long curTime = e.getTime();
+				
+				//Clear out any expired time records
+				for (long nextAvail = this.tc_peek(); nextAvail > -1 && nextAvail <= curTime; nextAvail = this.tc_peek()) {
+					this.tc_dequeue(); 
+				}
+				
 				long timeNeeded = e.getTimeOptimization();
-				if (timeNeeded > 0){
-					long curTime = e.getTime();
-					
-					//Clear out any expired time records
-					for (long nextAvail = this.tc_peek(); nextAvail > -1 && nextAvail <= curTime; nextAvail = this.tc_peek()) {
-						this.tc_dequeue(); 
-					}
-					
-					
-					long timeWhenUsable = curTime;
-					if (this.tc_size() == limit) {
-						//There are no unused resources so get the earliest resource availability
-						timeWhenUsable = tc_dequeue();
-					}
-					
-					ResPoolEvent eg = new ResPoolEvent(getId(),ResourcePoolEvent.RP_GRANT,curTime,getNextOrdinal());
-					eg.setTimeOptimization(timeWhenUsable);
-					System.out.println(e.getProducerId());
-					System.out.println(eg); //TODO Remove
-					resources.raiseResponse(eg, e);
-					
-					long timeToAdd = timeWhenUsable + timeNeeded;
-					this.tc_enqueue(timeToAdd);
-					
-					//Sanity check
-					if (this.tc_size() > limit) {
-						throw new IllegalStateException();
-					}
-				}else {
+				if (timeNeeded == Event.NOT_TIME_OPTIMIZED){
 					throw new IllegalStateException();
+				}
+
+				if (limit >= dependencyCount) {
+					//Don't need to worry about queuing due to capacity being large enough that the pool isn't contended
+					grantResourceRequest(e,curTime,timeNeeded,resources);
+				}else{
+					/*
+					 * Need to worry about queuing.
+					 * For a contended ResourcePool it is possible that Events will arrive out of order due to time over multiple calls.
+					 * For example, the first time this method is called during the time window the events might be:
+					 * 		ProducerA - RP_Request at time 100
+					 * 		ProducerB - RP_Request at time 500
+					 * Then the second time it is called during the window the events might be:
+					 * 		ProducerA - RP_Request at time 300
+					 * 		ProducerB - RP_Request at time 600
+					 * 
+					 * Processing the ProducerB time 500 event during the first method call can cause problems when the ResourcePool is contended.
+					 * If the ResourcePool has a limit of 1, and it processes the ProducerB event during the first method call then the ProducerA event at
+					 * time 300 will have have to wait until after time 500 to get a resource when in reality it should have received the resource before
+					 * Producer B.
+					 * */
+					
+					if (singleProducer && !firstDep.equals(e.getProducerId())){
+						if (firstDep == Utils.EMPTY_STRING) {
+							firstDep = e.getProducerId();
+						}else {
+							singleProducer = false;
+						}
+					}
+					
+					
+					if (singleProducer) {
+						//Can process as many events as we want until we encounter more than one producer
+						grantResourceRequest(e,curTime,timeNeeded,resources);
+					}else if (curTime < eventCutOffTime) {
+						//Can safely process any event that occurs before the cut off time
+						grantResourceRequest(e,curTime,timeNeeded,resources);
+					}else if (this.tc_size() < limit * scaleFactor) {
+						//Unsafely process events up to the limit specified by the scale factor
+						grantResourceRequest(e,curTime,timeNeeded,resources);
+					}else {
+						//Need to queue events and try to process next call
+						this.ev_enqueue(e);
+					}
 				}
 			}else {
 				throw new IllegalStateException();
 			}
+			
+			//Sanity check
+			if (this.tc_size() > limit) {
+				throw new IllegalStateException();
+			}
+		}	
+	}
+	
+	private void grantResourceRequest(Event inResponseTo, long curTime, long timeNeeded, ResponderResources resources) {
+		long timeWhenUsable = curTime;
+		if (this.tc_size() == limit) {
+			//There are no unused resources so get the earliest resource availability
+			timeWhenUsable = tc_dequeue();
 		}
 		
+		long timeToAdd = timeWhenUsable + timeNeeded;
+		ResPoolEvent eg = new ResPoolEvent(getId(),ResourcePoolEvent.RP_GRANT,curTime,getNextOrdinal());
+		eg.setTimeOptimization(timeWhenUsable);
+		//TODO Remove
+		//System.out.println(inResponseTo.getProducerId());
+		//System.out.println(eg);
+		resources.raiseResponse(eg, inResponseTo);
+
+		if (timeToAdd < eventCutOffTime) {
+			eventCutOffTime = timeToAdd;
+		}
+
+		this.tc_enqueue(timeToAdd);
 	}
 
 	@Override
@@ -146,6 +249,6 @@ public class CoreTimeOptimizedResourcePool extends TimeQueue implements Resource
 	
 	@Override
 	public void initiate(BasicInfo info) {
-		System.out.println(info.getDependencies());
+		dependencyCount = info.getDependencies().size();
 	}
 }

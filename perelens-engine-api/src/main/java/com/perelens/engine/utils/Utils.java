@@ -8,7 +8,7 @@ import java.util.Arrays;
 import com.perelens.engine.api.Event;
 
 /**
- * Copyright 2020-2023 Steven Branda
+ * Copyright 2020-2025 Steven Branda
    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
@@ -23,6 +23,8 @@ import com.perelens.engine.api.Event;
  *
  */
 public class Utils {
+	
+	public static final String EMPTY_STRING = "";
 	
 	public static final long[] EMPTY_LONG_ARRAY = new long[0];
 

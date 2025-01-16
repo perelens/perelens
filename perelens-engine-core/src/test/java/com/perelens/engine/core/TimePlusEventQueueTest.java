@@ -23,7 +23,7 @@ import com.perelens.engine.api.Event;
    
  * 
  */
-class TimePlusEventQueueTest extends TimeCallbackQueueTest{
+public class TimePlusEventQueueTest extends TimeCallbackQueueTest{
 
 	
 	@Override

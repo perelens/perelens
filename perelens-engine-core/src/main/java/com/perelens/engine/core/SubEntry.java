@@ -99,6 +99,11 @@ class SubEntry implements Iterable<Event>,ConsumerResources{
 		if (completeDeps > depIndex) {
 			throw new IllegalStateException(EngineMsgs.badState());
 		}
+		
+		return dependenciesAreComplete();
+	}
+	
+	boolean dependenciesAreComplete() {
 		return completeDeps == depIndex;
 	}
 	

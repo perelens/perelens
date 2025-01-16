@@ -120,7 +120,7 @@ public abstract class AbstractEvent implements Event {
 	public String toString() {
 		StringBuilder toReturn = new StringBuilder();
 		
-		writeEntry(toReturn,"",this);
+		writeEntry(toReturn,Utils.EMPTY_STRING,this);
 		
 		return toReturn.toString();
 	}

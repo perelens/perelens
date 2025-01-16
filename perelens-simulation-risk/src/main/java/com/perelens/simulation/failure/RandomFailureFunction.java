@@ -288,7 +288,7 @@ public class RandomFailureFunction extends AbstractFailureFunction {
 		Map<ConfigKey, String> toReturn = new HashMap<>(super.getConfiguration());
 		toReturn.put(CONFIG_KEYS.RFF_FAILURE_ARRIVAL_DIST, failureDistribution.getSetup());
 		toReturn.put(CONFIG_KEYS.RFF_REPAIR_TIME_DIST, repairDistribution.getSetup());
-		toReturn.put(CONFIG_KEYS.RFF_RESOURCE_POOL, resourcePool==null?"":resourcePool);
+		toReturn.put(CONFIG_KEYS.RFF_RESOURCE_POOL, resourcePool==null?Utils.EMPTY_STRING:resourcePool);
 		return toReturn;
 	}
 

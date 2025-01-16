@@ -56,6 +56,8 @@ public interface Event {
 	 * @return
 	 */
 	default long getTimeOptimization() {
-		return -1;
+		return NOT_TIME_OPTIMIZED;
 	}
+	
+	public static final long NOT_TIME_OPTIMIZED = -1;
 }

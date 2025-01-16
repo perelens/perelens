@@ -6,6 +6,7 @@ package com.perelens.engine.core;
 import java.util.Arrays;
 
 import com.perelens.engine.api.EventEvaluator;
+import com.perelens.engine.utils.Utils;
 
 /**
  * Copyright 2020-2023 Steven Branda
@@ -26,7 +27,7 @@ public class EvalEntry extends RespEntry {
 	//EventEvaluator functionality
 	private SubEntry[] subscribers = CoreUtils.NO_ENTRIES;		//The EventSubscribers that should receive events dispatched this EventEvaluator
 	private int subIndex = 0;
-	String lastEvents = "";
+	String lastEvents = Utils.EMPTY_STRING;
 	
 	EvalEntry(EventEvaluator object, CoreEngine engine) {
 		super(object, engine);

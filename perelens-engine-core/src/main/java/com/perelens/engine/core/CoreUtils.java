@@ -65,8 +65,10 @@ public class CoreUtils {
 			}
 			);
 	
-	public static Comparator<Event> getEventComparator(Comparator<EventType> etCompare) {
-		Utils.checkNull(etCompare);
+	public static Comparator<Event> getEventComparator(Comparator<? extends EventType> etComp) {
+		Utils.checkNull(etComp);
+		@SuppressWarnings("unchecked")
+		var etCompare = (Comparator<EventType>)etComp;
 		if (etCompare == EventSubscriber.DEFAULT_COMPARATOR) {
 			return EVENT_COMPARATOR;
 		}else {

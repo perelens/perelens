@@ -65,7 +65,7 @@ class EventResponderLogic implements Runnable{
 			teEntry.clearEvents();
 
 			//See if the entry can be marked completed
-			if (!teEntry.needsResponse()) {
+			if (!teEntry.needsResponse() && teEntry.dependenciesAreComplete()) {
 				teEntry.markComplete();
 				complete = true;
 			}

@@ -15,8 +15,8 @@ import org.junit.jupiter.api.Test;
 
 import com.perelens.engine.TestResources;
 import com.perelens.engine.api.Event;
-import com.perelens.engine.core.TimeCallbackQueueTest;
-import com.perelens.engine.core.TimeQueue;
+import com.perelens.engine.core.TimePlusEventQueue;
+import com.perelens.engine.core.TimePlusEventQueueTest;
 import com.perelens.simulation.events.ResourcePoolEvent;
 
 /**
@@ -34,10 +34,10 @@ import com.perelens.simulation.events.ResourcePoolEvent;
  * @author Steve Branda
  *
  */
-class CoreTimeOptimizedResourcePoolTest extends TimeCallbackQueueTest{
+class CoreTimeOptimizedResourcePoolTest extends TimePlusEventQueueTest{
 
 	@Override
-	protected TimeQueue newTimeCallbackQueue() {
+	protected TimePlusEventQueue newTimeCallbackQueue() {
 		return new CoreTimeOptimizedResourcePool("pool1",1);
 	}
 	
