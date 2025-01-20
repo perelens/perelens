@@ -6,10 +6,12 @@ package com.perelens.engine.core;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.perelens.engine.api.CircularDependencyException;
@@ -40,6 +42,7 @@ public class CoreEngine implements Engine {
 
 	//all objects consuming and or producing events in the simulation
 	private ConcurrentHashMap<String, SubEntry> simObjects = new ConcurrentHashMap<>();
+	private ConcurrentHashMap<String, RespEntry> responders = new ConcurrentHashMap<>();
 
 	//Fields for accumulating all events if necessary.
 	private SubEntry globalEntry = new SubEntry(new EventConsumer() {
@@ -51,19 +54,20 @@ public class CoreEngine implements Engine {
 		public void consume(long timeWindow, ConsumerResources resources) {
 			throw new IllegalStateException(EngineMsgs.badState());
 		}}, this);
-	private ConcurrentHashMap<String,EventConsumer> globalConsumers = new ConcurrentHashMap<>();
+	private HashMap<String,EventConsumer> globalConsumers = new HashMap<>();
 	
 	//Fields for executing the simulation
 	private long timeCompleted = 0;
 	private ForkJoinPool fjPool;
 	private AtomicInteger entriesCompleted = new AtomicInteger(0);
-	private ConcurrentHashMap<String,RespEntry> activeResponders = new ConcurrentHashMap<>();
 
 	//Fields for synchronizing the CoreEngine
 	private AtomicInteger executionQueueDepth = new AtomicInteger(0);
 	private Object windowSignal = new Object();
 	
 	private ConcurrentLinkedQueue<Throwable> throwables = new ConcurrentLinkedQueue<>();
+	
+	private final int parallelThreshold;
 
 	public CoreEngine (int parallelism) {
 		fjPool = new ForkJoinPool(parallelism,ForkJoinPool.defaultForkJoinWorkerThreadFactory,
@@ -76,6 +80,9 @@ public class CoreEngine implements Engine {
 					}},
 				
 				false);
+		
+		//TODO improve logic for setting this
+		parallelThreshold = 400 / parallelism;
 	}
 	
 	@Override
@@ -109,7 +116,9 @@ public class CoreEngine implements Engine {
 			if (globalConsumers.containsKey(x)) {
 				throw new IllegalArgumentException(EngineMsgs.globalConsumer());
 			}else {
-				return new RespEntry(responder, this);
+				var tr =  new RespEntry(responder, this);
+				responders.put(responder.getId(), tr);
+				return tr;
 			}
 		});
 
@@ -201,19 +210,20 @@ public class CoreEngine implements Engine {
 		//Reset the completion counter
 		entriesCompleted.set(0);
 
-		int detachedEntries = 0;
+		final AtomicInteger detachedEntries = new AtomicInteger(0);
 
 		//prepare all the simulation objects for this round of execution
-		ArrayList<SubEntry> toEnqueue = new ArrayList<>();
+		final var toEnqueue = new ConcurrentLinkedQueue<SubEntry>();
 		
-		for (SubEntry e : simObjects.values()) {
+		
+		simObjects.forEachValue(parallelThreshold, (e) -> {
 			e.acquire();
 			try {
 				//prepare the entry for the next evaluation cycle
 				e.prepareForNextInterval(targetOffset);
 
 				if (e.isDetached()) {
-					detachedEntries++;
+					detachedEntries.incrementAndGet();
 				}
 
 				if (e.canStartEval()) {
@@ -222,7 +232,7 @@ public class CoreEngine implements Engine {
 			}finally {
 				e.release();
 			}	
-		}
+		});
 
 		//Submit all the Entries ready for execution
 		for (SubEntry e : toEnqueue) {
@@ -232,31 +242,29 @@ public class CoreEngine implements Engine {
 		//wait for the time window to complete execution
 		waitForExecution();
 
-		while (entriesCompleted.get() < simObjects.size() - detachedEntries) {
-			//The simulation has halted.  There are two possibilities
-
-			int arSize = activeResponders.size();
-			if (arSize > 0) {
-				//First, EventEvaluators are waiting for responses from EventResponders
-				//At this point evaluate all event responders that have events to process
-				while(arSize > 0) {
-					ArrayList<RespEntry> te = new ArrayList<RespEntry>(activeResponders.values());
-					activeResponders.clear();
-					for (RespEntry e : te) {
-						e.deregisterAsActive();
-						if (!e.isComplete()){
-							enqueue(e,targetOffset);
-						}
-					}
-
-					waitForExecution();
-					arSize = activeResponders.size();
+		int expectedComplete = simObjects.size() - detachedEntries.get();
+		
+		while (entriesCompleted.get() < expectedComplete) {
+		
+			AtomicBoolean activeResponders = new AtomicBoolean(false);
+			
+			responders.forEachValue(parallelThreshold, (re) ->{
+				if (re.isActive()) {
+					activeResponders.compareAndSet(false, true);
+					//TODO consider adding a critical section around re but guessing it is not needed for now
+					re.deregisterAsActive();
+					enqueue(re,targetOffset);
 				}
-			}else {
-				//Second, a circular dependency has been detected and must be resolved
-
+			});
+			
+			waitForExecution();
+			
+			if (!activeResponders.get()) {
+				//A circular dependency has been detected and must be resolved
+				
 				throw new CircularDependencyException(EngineMsgs.circularDependencyDetected());
 			}
+			
 		}
 		
 		//Send events to any global consumers
@@ -344,10 +352,6 @@ public class CoreEngine implements Engine {
 				windowSignal.notifyAll();
 			}
 		}
-	}
-	
-	void activeResponder(RespEntry e) {
-		activeResponders.putIfAbsent(e.getId(), e);
 	}
 	
 	RespEntry getRespEntry(String id) {

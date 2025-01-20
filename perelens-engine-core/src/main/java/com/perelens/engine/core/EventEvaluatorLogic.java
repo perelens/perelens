@@ -40,7 +40,7 @@ class EventEvaluatorLogic implements Runnable {
 		teEntry = te;
 		this.timeOffset = timeOffset;
 		this.targetOffset = targetOffset;
-		teEval =  te.getObject();
+		teEval =  (EventEvaluator) te.getObject();
 		this.engine = eng;
 	}
 

@@ -105,13 +105,14 @@ public class RespEntry extends SubEntry {
 	}
 	
 	void registerAsActive() {
-		if (!registered) {
-			engine.activeResponder(this);
-			registered = true;
-		}
+		registered = true;
 	}
 	
 	void deregisterAsActive() {
 		registered = false;
+	}
+	
+	boolean isActive() {
+		return registered;
 	}
 }

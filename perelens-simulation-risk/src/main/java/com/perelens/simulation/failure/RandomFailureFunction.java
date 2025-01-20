@@ -104,21 +104,19 @@ public class RandomFailureFunction extends AbstractFailureFunction {
 	@Override
 	protected void postProcess() {
 		if (getRepairResource() != null) {
-			if (getRepairResource().getTimeOptimization() == -1) {
-				//Not Time optimized
-				long resTime = getRepairResource().getTime();
+		
+			long resTime = getRepairResource().getTime();
 
-				if (resTime > getWindowStart()) {
-					//repair resource was received in this time window, but will be kept at least until the next window
-					//Need to raise a DEFERRED event so the Resource Pool can complete this time window
-					Event defer = new ResPoolEvent(getId(),ResourcePoolEvent.RP_DEFER,getTimeProcessed(), getNextOrdinal());
-					raiseResponse(defer, getRepairResource());
-				}
+			if (resTime > getWindowStart()) {
+				//repair resource was received in this time window, but will be kept at least until the next window
+				//Need to raise a DEFERRED event so the Resource Pool can complete this time window
+				Event defer = new ResPoolEvent(getId(),ResourcePoolEvent.RP_DEFER,getTimeProcessed(), getNextOrdinal());
+				raiseResponse(defer, getRepairResource());
+			}
 				
-				//Sanity check
-				if (getState() != State.RESTORING) {
-					throw new IllegalStateException(FailureMsgs.badState());
-				}
+			//Sanity check
+			if (getState() != State.RESTORING && getRepairResource().getTimeOptimization() == Event.NOT_TIME_OPTIMIZED) {
+				throw new IllegalStateException(FailureMsgs.badState());
 			}
 		}
 	}
@@ -175,7 +173,7 @@ public class RandomFailureFunction extends AbstractFailureFunction {
 		
 		if (getState() == State.RESTORING) {
 			if (getReturnToServiceTime() == getTimeProcessed()) {
-				if (getResourcePool() != null && getRepairResource().getTimeOptimization() == -1) {
+				if (getResourcePool() != null) {
 					//Not Time optimized
 					//Return the repair resource
 					Event retRes = new ResPoolEvent(getId(),ResourcePoolEvent.RP_RETURN,getReturnToServiceTime(), getNextOrdinal());

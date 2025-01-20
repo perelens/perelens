@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 
 import org.junit.jupiter.api.Test;
@@ -64,7 +63,7 @@ class CoreTimeOptimizedResourcePoolTest extends TimePlusEventQueueTest{
 		assertFalse(raised.hasNext());
 		assertEquals(reqEvent,re.getInResponseTo());
 		assertEquals(ResourcePoolEvent.RP_GRANT,raisedEvent.getType());
-		assertEquals(Collections.EMPTY_LIST,raisedEvent.getResponseTypes());
+		assertEquals(ResourcePoolEvent.GRANT_RESPONSE_TYPES,raisedEvent.getResponseTypes());
 		assertEquals("pool1",raisedEvent.getProducerId());
 		assertEquals(50,raisedEvent.getTime());
 		assertEquals(50, raisedEvent.getTimeOptimization());
@@ -95,7 +94,7 @@ class CoreTimeOptimizedResourcePoolTest extends TimePlusEventQueueTest{
 			Event raisedEvent = re.getResponse();
 			assertEquals(toRaise.get(j),re.getInResponseTo());
 			assertEquals(ResourcePoolEvent.RP_GRANT,raisedEvent.getType());
-			assertEquals(Collections.EMPTY_LIST,raisedEvent.getResponseTypes());
+			assertEquals(ResourcePoolEvent.GRANT_RESPONSE_TYPES,raisedEvent.getResponseTypes());
 			assertEquals("pool1",raisedEvent.getProducerId());
 			assertEquals(50 + j, raisedEvent.getTime());
 			assertEquals(50 + j, raisedEvent.getTimeOptimization());
@@ -124,7 +123,7 @@ class CoreTimeOptimizedResourcePoolTest extends TimePlusEventQueueTest{
 			Event raisedEvent = re.getResponse();
 			assertEquals(toRaise.get(j),re.getInResponseTo());
 			assertEquals(ResourcePoolEvent.RP_GRANT,raisedEvent.getType());
-			assertEquals(Collections.EMPTY_LIST,raisedEvent.getResponseTypes());
+			assertEquals(ResourcePoolEvent.GRANT_RESPONSE_TYPES,raisedEvent.getResponseTypes());
 			assertEquals("pool1",raisedEvent.getProducerId());
 			assertEquals(100 + j, raisedEvent.getTime());
 			assertEquals(150 + j, raisedEvent.getTimeOptimization());
@@ -153,7 +152,7 @@ class CoreTimeOptimizedResourcePoolTest extends TimePlusEventQueueTest{
 			Event raisedEvent = re.getResponse();
 			assertEquals(toRaise.get(j),re.getInResponseTo());
 			assertEquals(ResourcePoolEvent.RP_GRANT,raisedEvent.getType());
-			assertEquals(Collections.EMPTY_LIST,raisedEvent.getResponseTypes());
+			assertEquals(ResourcePoolEvent.GRANT_RESPONSE_TYPES,raisedEvent.getResponseTypes());
 			assertEquals("pool1",raisedEvent.getProducerId());
 			assertEquals(250 + j, raisedEvent.getTime());
 			assertEquals(250 + j, raisedEvent.getTimeOptimization());
@@ -187,7 +186,7 @@ class CoreTimeOptimizedResourcePoolTest extends TimePlusEventQueueTest{
 			Event raisedEvent = re.getResponse();
 			assertEquals(toRaise.get(j),re.getInResponseTo());
 			assertEquals(ResourcePoolEvent.RP_GRANT,raisedEvent.getType());
-			assertEquals(Collections.EMPTY_LIST,raisedEvent.getResponseTypes());
+			assertEquals(ResourcePoolEvent.GRANT_RESPONSE_TYPES,raisedEvent.getResponseTypes());
 			assertEquals("pool1",raisedEvent.getProducerId());
 			assertEquals(50 + j, raisedEvent.getTime());
 			if (j < resLimit) {
@@ -225,7 +224,7 @@ class CoreTimeOptimizedResourcePoolTest extends TimePlusEventQueueTest{
 			Event raisedEvent = re.getResponse();
 			assertEquals(toRaise.get(j),re.getInResponseTo());
 			assertEquals(ResourcePoolEvent.RP_GRANT,raisedEvent.getType());
-			assertEquals(Collections.EMPTY_LIST,raisedEvent.getResponseTypes());
+			assertEquals(ResourcePoolEvent.GRANT_RESPONSE_TYPES,raisedEvent.getResponseTypes());
 			assertEquals("pool1",raisedEvent.getProducerId());
 			assertEquals(50 + j, raisedEvent.getTime());
 			if (j < resLimit) {

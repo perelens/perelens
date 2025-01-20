@@ -33,10 +33,6 @@ public class EvalEntry extends RespEntry {
 		super(object, engine);
 	}
 	
-	EventEvaluator getObject() {
-		return (EventEvaluator) super.getObject();
-	}
-	
 	void addSubscriber(SubEntry toAdd) {
 		subscribers = com.perelens.engine.utils.Utils.append(subscribers,toAdd, subIndex);
 		subIndex++;
@@ -69,11 +65,5 @@ public class EvalEntry extends RespEntry {
 	Runnable getEvaluator(CoreEngine engine, long timeOffset, long targetOffset) {
 		return new EventEvaluatorLogic(this,timeOffset,targetOffset,engine);
 	}
-
-	@Override
-	void registerAsActive() {
-		//EventEvaluators should not register as active
-	}
-	
 	
 }

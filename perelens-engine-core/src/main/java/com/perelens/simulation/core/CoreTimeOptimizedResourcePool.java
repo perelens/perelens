@@ -20,7 +20,7 @@ import com.perelens.simulation.api.ResourcePool;
 import com.perelens.simulation.events.ResourcePoolEvent;
 
 /**
- * Copyright 2020-2024 Steven Branda
+ * Copyright 2020-2025 Steven Branda
    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
@@ -33,7 +33,7 @@ import com.perelens.simulation.events.ResourcePoolEvent;
    ResourcePool implementation that only works with Time Optimized ResourcePoolEvents.
    Requesters can use time optimization when they know exactly how many time units they will hold the resource for before returning it.
    Given this information the ResourcePool can return a time optimized GRANT event that tells the requester the time cycle at which the resource can be used.
-   This eliminates the need for RETURN and RENEW events to be passed, reducing the overhead of the ResourcePool interaction by at least half.
+   This eliminates a lot of processing overhead of the ResourcePool and improves performance by around 20% in some scenarios.
    
  * @author Steve Branda 
  */
@@ -194,7 +194,9 @@ public class CoreTimeOptimizedResourcePool extends TimePlusEventQueue implements
 						this.ev_enqueue(e);
 					}
 				}
-			}else {
+			}else if (!ResourcePoolEvent.GRANT_RESPONSE_TYPES.contains(e.getType())){
+				//Don't actually need to process RP_RETURN or RP_DEFER events
+				//They can be eliminated but passing them makes the simulation perform better due to better multithreading
 				throw new IllegalStateException();
 			}
 			
@@ -203,12 +205,6 @@ public class CoreTimeOptimizedResourcePool extends TimePlusEventQueue implements
 				throw new IllegalStateException();
 			}
 		}	
-		
-		if (this.ev_hasMore()) {
-			//Need to make sure this EventResponder gets called again until the Event queue is drained
-			//TODO figure out if this is making things slow
-			resources.keepActive();
-		}
 	}
 	
 	private void grantResourceRequest(Event inResponseTo, long curTime, long timeNeeded, ResponderResources resources) {
@@ -219,7 +215,7 @@ public class CoreTimeOptimizedResourcePool extends TimePlusEventQueue implements
 		}
 		
 		long timeToAdd = timeWhenUsable + timeNeeded;
-		ResPoolEvent eg = new ResPoolEvent(getId(),ResourcePoolEvent.RP_GRANT,curTime,getNextOrdinal());
+		ResPoolEvent eg = new ResPoolEvent(getId(),ResourcePoolEvent.RP_GRANT,curTime,getNextOrdinal(),ResourcePoolEvent.GRANT_RESPONSE_TYPES);
 		eg.setTimeOptimization(timeWhenUsable);
 		resources.raiseResponse(eg, inResponseTo);
 		if (timeToAdd < eventCutOffTime) {
