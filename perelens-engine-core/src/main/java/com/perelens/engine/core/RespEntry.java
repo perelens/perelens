@@ -3,6 +3,7 @@
  */
 package com.perelens.engine.core;
 
+import com.perelens.Msgs;
 import com.perelens.engine.api.Event;
 import com.perelens.engine.api.EventGenerator;
 
@@ -82,7 +83,7 @@ public class RespEntry extends SubEntry {
 		if (!complete) {
 			complete = true;
 		}else {
-			throw new IllegalStateException();
+			throw new IllegalStateException(Msgs.badState());
 		}
 	}
 	

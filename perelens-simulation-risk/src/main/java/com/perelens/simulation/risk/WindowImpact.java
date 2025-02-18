@@ -140,7 +140,7 @@ public class WindowImpact extends AbstractEventEvaluator implements Function, Ev
 			}else if (curEvent.getType() == end) {
 				if (curWinStart == null) {
 					//TODO maybe undo this for dynamic simulations in the future
-					throw new IllegalStateException();
+					throw new IllegalStateException(RskMsgs.badState());
 				}else {
 					//Window is closing
 					if (getTimeProcessed() < nextImpactTime) {
@@ -151,7 +151,7 @@ public class WindowImpact extends AbstractEventEvaluator implements Function, Ev
 					curWinStart = null;
 				}
 			}else {
-				throw new IllegalStateException();
+				throw new IllegalStateException(RskMsgs.badState());
 			}
 		}
 		

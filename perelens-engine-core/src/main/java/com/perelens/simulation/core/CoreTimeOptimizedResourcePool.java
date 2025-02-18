@@ -148,7 +148,7 @@ public class CoreTimeOptimizedResourcePool extends TimePlusEventQueue implements
 				
 				long timeNeeded = e.getTimeOptimization();
 				if (timeNeeded == Event.NOT_TIME_OPTIMIZED){
-					throw new IllegalStateException();
+					throw new IllegalStateException(SimMsgs.eventNotTimeOptimized(e));
 				}
 
 				if (limit >= dependencyCount) {
@@ -197,12 +197,12 @@ public class CoreTimeOptimizedResourcePool extends TimePlusEventQueue implements
 			}else if (!ResourcePoolEvent.GRANT_RESPONSE_TYPES.contains(e.getType())){
 				//Don't actually need to process RP_RETURN or RP_DEFER events
 				//They can be eliminated but passing them makes the simulation perform better due to better multithreading
-				throw new IllegalStateException();
+				throw new IllegalStateException(SimMsgs.unexpectedEvent(e));
 			}
 			
 			//Sanity check
 			if (this.tc_size() > limit) {
-				throw new IllegalStateException();
+				throw new IllegalStateException(SimMsgs.badState());
 			}
 		}	
 	}

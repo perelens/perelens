@@ -102,7 +102,7 @@ public class RandomRisk extends AbstractEventWindow implements Function{
 	@Override
 	protected Event createEvent(String id, EventType type, long time, long ordinal, Event curEvent) {
 		if (curEvent != null) {
-			throw new IllegalStateException();
+			throw new IllegalStateException(RskMsgs.badState());
 		}
 		return new RiskSimEvent(id,type,time,ordinal);
 	}

@@ -4,6 +4,7 @@
 package com.perelens.simulation.core;
 
 import com.perelens.Msgs;
+import com.perelens.engine.api.Event;
 
 /**
  * Copyright 2020-2023 Steven Branda
@@ -75,6 +76,14 @@ class SimMsgs extends Msgs{
 	
 	public static String upperBoundMustBeGreater(Number upper, Number lower) {
 		return "Upper bound must be greater than lower bound. uppper = " + upper + "; lower = " + lower;
+	}
+
+	public static String eventNotTimeOptimized(Event e) {
+		return "Event is not time optimized: " + e;
+	}
+
+	public static String unexpectedEvent(Event e) {
+		return "Unexpected event encountered: " + e;
 	}
 	
 }

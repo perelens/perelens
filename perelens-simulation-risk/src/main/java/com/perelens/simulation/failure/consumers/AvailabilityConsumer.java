@@ -3,6 +3,7 @@
  */
 package com.perelens.simulation.failure.consumers;
 
+import com.perelens.Msgs;
 import com.perelens.engine.api.Event;
 
 /**
@@ -49,7 +50,7 @@ public class AvailabilityConsumer extends AbstractFailureConsumer {
 		super.preInvoke();
 		//Sanity check
 		if (getLastTime() != totalUptime + totalDowntime) {
-			throw new IllegalStateException();
+			throw new IllegalStateException(Msgs.badState());
 		}
 	}
 
