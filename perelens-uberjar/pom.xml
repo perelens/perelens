@@ -3,7 +3,7 @@
   <parent>
     <groupId>com.perelens</groupId>
     <artifactId>perelens</artifactId>
-    <version>1.0</version>
+    <version>1.1</version>
   </parent>
   <artifactId>perelens-uberjar</artifactId>
   <name>Perelens Uber Jar</name>
@@ -14,7 +14,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-shade-plugin</artifactId>
-				<version>3.5.1</version>
+				<version>3.6.1</version>
 				<configuration>
 					<createSourcesJar>true</createSourcesJar>
 				</configuration>
@@ -62,25 +62,25 @@
 		<dependency>
 			<groupId>com.perelens</groupId>
 			<artifactId>perelens-simulation-risk</artifactId>
-			<version>1.0</version>
+			<version>1.1</version>
 		</dependency>
 
 		<dependency>
 			<groupId>com.perelens</groupId>
 			<artifactId>perelens-engine-core</artifactId>
-			<version>1.0</version>
+			<version>1.1</version>
 		</dependency>
 
 		<dependency>
 			<groupId>com.perelens</groupId>
 			<artifactId>perelens-random-rngpack</artifactId>
-			<version>1.0</version>
+			<version>1.1</version>
 		</dependency>
 
 		<dependency>
 			<groupId>com.perelens</groupId>
 			<artifactId>perelens-statistics</artifactId>
-			<version>1.0</version>
+			<version>1.1</version>
 		</dependency>
 	</dependencies>
 </project>

@@ -110,6 +110,8 @@ public class RandomFailureFunction extends AbstractFailureFunction {
 			if (resTime > getWindowStart()) {
 				//repair resource was received in this time window, but will be kept at least until the next window
 				//Need to raise a DEFERRED event so the Resource Pool can complete this time window
+				//Technically a DEFERRED event is not necessary with a TimeOptimized Resource pool but
+				//raising it improves thread scheduling efficiency greatly.
 				Event defer = new ResPoolEvent(getId(),ResourcePoolEvent.RP_DEFER,getTimeProcessed(), getNextOrdinal());
 				raiseResponse(defer, getRepairResource());
 			}
@@ -174,8 +176,9 @@ public class RandomFailureFunction extends AbstractFailureFunction {
 		if (getState() == State.RESTORING) {
 			if (getReturnToServiceTime() == getTimeProcessed()) {
 				if (getResourcePool() != null) {
-					//Not Time optimized
 					//Return the repair resource
+					//Technically a TimeOptimized resource pool does not need this event generated
+					//however doing so greatly improves thread scheduling so we have to keep it.
 					Event retRes = new ResPoolEvent(getId(),ResourcePoolEvent.RP_RETURN,getReturnToServiceTime(), getNextOrdinal());
 					if (getRepairResource().getTime() > getWindowStart()) {
 						//If the resource is received and the repair completes in the same time window then return through response

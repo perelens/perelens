@@ -702,4 +702,19 @@ class ValidationTest {
 		
 		s.destroy();
 	}
+	
+//	@Test
+//	void profiler() throws Throwable {
+//		test1000SingleSpare16NodeClusters();
+//		
+//		var read = new BufferedReader(new InputStreamReader(System.in));
+//		System.out.print("press enter");
+//		read.readLine();
+//		
+//		long start = System.currentTimeMillis();
+//		test1000SingleSpare16NodeClusters();
+//		long stop = System.currentTimeMillis();
+//		
+//		System.out.println(stop - start + " ms");
+//	}
 }

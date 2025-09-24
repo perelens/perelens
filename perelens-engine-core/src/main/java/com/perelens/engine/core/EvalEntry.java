@@ -57,7 +57,7 @@ public class EvalEntry extends RespEntry {
 	
 	@Override
 	boolean isDetached() {
-		return getDependencyCount() == 0 && getSubscriberCount() == 0;
+		return getSubscriberCount() == 0 && getDependencyCount() == 0 ;
 	}
 	
 	//Evaluation Logic Methods

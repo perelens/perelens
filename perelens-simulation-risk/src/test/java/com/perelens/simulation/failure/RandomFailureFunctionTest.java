@@ -1130,7 +1130,7 @@ class RandomFailureFunctionTest {
 		rff.consume(nextWindowTime, tr);
 		
 		assertEquals(1, tr.getRaisedEvents().size()); 		//The RETURN_TO_SERVICE event
-		assertEquals(0, tr.getRaisedResponses().size()); 	//The RP_RETURN response event
+		assertEquals(1, tr.getRaisedResponses().size()); 	//The RP_RETURN response event
 		
 		events = tr.getRaisedEvents().iterator();
 		Event rtsEvent = events.next();
@@ -1140,6 +1140,12 @@ class RandomFailureFunctionTest {
 		assertFalse(events.hasNext());
 		
 		Iterator<ResponseEntry> re = tr.getRaisedResponses().iterator();
+		ResponseEntry ree = re.next();
+		Event retEvent = ree.getResponse();
+		assertEquals(grantedEvent,ree.getInResponseTo());
+		assertEquals(ResourcePoolEvent.RP_RETURN, retEvent.getType());
+		assertEquals(rtsTime,retEvent.getTime());
+		assertEquals(rff.getId(),retEvent.getProducerId());
 		assertFalse(re.hasNext());
 	}
 	
@@ -1230,16 +1236,30 @@ class RandomFailureFunctionTest {
 		rff.consume(nextWindowTime, tr);
 		
 		assertEquals(0, tr.getRaisedEvents().size()); 		
-		assertEquals(0, tr.getRaisedResponses().size()); 	//No RP_DEFER with time optimization
+		assertEquals(1, tr.getRaisedResponses().size()); 	//RP_DEFER with time optimization for performance reasons
+		
+		Iterator<ResponseEntry> re = tr.getRaisedResponses().iterator();
+		ResponseEntry ree = re.next();
+		Event retEvent = ree.getResponse();
+		assertEquals(grantedEvent,ree.getInResponseTo());
+		assertEquals(ResourcePoolEvent.RP_DEFER, retEvent.getType());
+		assertEquals(grantTime,retEvent.getTime());
+		assertEquals(rff.getId(),retEvent.getProducerId());
+		assertFalse(re.hasNext());
 		
 		//invoke the next window where the repair and return should happen
 		tr = new TestResources(Collections.emptyList());
 		
 		rff.consume(nextWindowTime * 2, tr);
-		assertEquals(1, tr.getRaisedEvents().size()); 		//The RETURN_TO_SERVICE.  No RP_RETURN with time optimization
+		assertEquals(2, tr.getRaisedEvents().size()); 		//The RETURN_TO_SERVICE.  RP_RETURN with time optimization for performance reasons
 		assertEquals(0, tr.getRaisedResponses().size());
 		
 		events = tr.getRaisedEvents().iterator();
+		
+		retEvent = events.next();
+		assertEquals(ResourcePoolEvent.RP_RETURN, retEvent.getType());
+		assertEquals(rtsTime,retEvent.getTime());
+		assertEquals(rff.getId(),retEvent.getProducerId());
 		
 		Event rtsEvent = events.next();
 		assertEquals(FailureSimulationEvent.FS_RETURN_TO_SERVICE, rtsEvent.getType());
@@ -1334,26 +1354,40 @@ class RandomFailureFunctionTest {
 		rff.consume(nextWindowTime, tr);
 		
 		assertEquals(0, tr.getRaisedEvents().size()); 		
-		assertEquals(0, tr.getRaisedResponses().size()); 	//No RP_DEFER with time optimization
+		assertEquals(1, tr.getRaisedResponses().size()); 	//RP_DEFER with time optimization for performance
+		
+		Iterator<ResponseEntry> re = tr.getRaisedResponses().iterator();
+		ResponseEntry ree = re.next();
+		Event retEvent = ree.getResponse();
+		assertEquals(grantedEvent,ree.getInResponseTo());
+		assertEquals(ResourcePoolEvent.RP_DEFER, retEvent.getType());
+		assertEquals(grantTime,retEvent.getTime());
+		assertEquals(rff.getId(),retEvent.getProducerId());
+		assertFalse(re.hasNext());
 		
 		//invoke the next window where nothing should happen
 		tr = new TestResources(Collections.emptyList());
 		
 		rff.consume(nextWindowTime * 2, tr);
-		assertEquals(0, tr.getRaisedEvents().size()); 		//No RETURN_TO_SERVICE.  No RP_RETURN with time optimization
+		assertEquals(0, tr.getRaisedEvents().size()); 		//No RETURN_TO_SERVICE.  No RP_DEFER with time optimization
 		assertEquals(0, tr.getRaisedResponses().size());
 		
 		tr = new TestResources(Collections.emptyList());
 		rff.consume(nextWindowTime * 3, tr);
-		assertEquals(0, tr.getRaisedEvents().size()); 		//No RETURN_TO_SERVICE.  No RP_RETURN with time optimization
+		assertEquals(0, tr.getRaisedEvents().size()); 		//No RETURN_TO_SERVICE.  No RP_DEFER with time optimization
 		assertEquals(0, tr.getRaisedResponses().size());
 		
 		tr = new TestResources(Collections.emptyList());
 		rff.consume(nextWindowTime * 4, tr);
-		assertEquals(1, tr.getRaisedEvents().size()); 		//The RETURN_TO_SERVICE.  No RP_RETURN with time optimization
+		assertEquals(2, tr.getRaisedEvents().size()); 		//The RETURN_TO_SERVICE. RP_RETURN with time optimization for performance
 		assertEquals(0, tr.getRaisedResponses().size());
 		
 		events = tr.getRaisedEvents().iterator();
+		
+		retEvent = events.next();
+		assertEquals(ResourcePoolEvent.RP_RETURN, retEvent.getType());
+		assertEquals(nextWindowTime*3 + repairInterval,retEvent.getTime());
+		assertEquals(rff.getId(),retEvent.getProducerId());
 		
 		Event rtsEvent = events.next();
 		assertEquals(FailureSimulationEvent.FS_RETURN_TO_SERVICE, rtsEvent.getType());

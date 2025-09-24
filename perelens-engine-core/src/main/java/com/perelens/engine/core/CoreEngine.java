@@ -215,7 +215,6 @@ public class CoreEngine implements Engine {
 		//prepare all the simulation objects for this round of execution
 		final var toEnqueue = new ConcurrentLinkedQueue<SubEntry>();
 		
-		
 		simObjects.forEachValue(parallelThreshold, (e) -> {
 			e.acquire();
 			try {
@@ -245,12 +244,12 @@ public class CoreEngine implements Engine {
 		int expectedComplete = simObjects.size() - detachedEntries.get();
 		
 		while (entriesCompleted.get() < expectedComplete) {
-		
-			AtomicBoolean activeResponders = new AtomicBoolean(false);
 			
+			AtomicBoolean activeResponders = new AtomicBoolean(false);
+		
 			responders.forEachValue(parallelThreshold, (re) ->{
 				if (re.isActive()) {
-					activeResponders.compareAndSet(false, true);
+					activeResponders.setPlain(true);
 					//TODO consider adding a critical section around re but guessing it is not needed for now
 					re.deregisterAsActive();
 					enqueue(re,targetOffset);
@@ -259,12 +258,10 @@ public class CoreEngine implements Engine {
 			
 			waitForExecution();
 			
-			if (!activeResponders.get()) {
+			if (!activeResponders.getPlain()) {
 				//A circular dependency has been detected and must be resolved
-				
 				throw new CircularDependencyException(EngineMsgs.circularDependencyDetected());
 			}
-			
 		}
 		
 		//Send events to any global consumers
@@ -310,7 +307,6 @@ public class CoreEngine implements Engine {
 
 			//wait for the threads to complete execution
 			waitForExecution();
-
 		}
 
 		//Advance the time offset for the simulation
