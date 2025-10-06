@@ -29,12 +29,12 @@ Use the **perelens-complete** artifact for Maven projects.
 <dependency>
     <groupId>com.perelens</groupId>
     <artifactId>perelens-complete</artifactId>
-    <version>1.0</version>
+    <version>1.1</version>
     <type>pom</type>
 </dependency>
 ```
 
-For legacy classpath usage, it is best to download the [Uber Jar](https://repo1.maven.org/maven2/com/perelens/perelens-uberjar/1.0/)
+For legacy classpath usage, it is best to download the [Uber Jar](https://repo1.maven.org/maven2/com/perelens/perelens-uberjar/1.1/)
 
 ## Usage
 
